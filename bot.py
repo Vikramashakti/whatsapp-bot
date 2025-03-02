@@ -9,9 +9,9 @@ app = Flask(__name__)
 # Enable logging for debugging
 logging.basicConfig(level=logging.INFO)
 
-@app.route("/", methods=['GET'])
+@app.route("/", methods=['GET', 'POST'])
 def home():
-    """Default homepage to prevent 404 errors."""
+    """Default homepage to prevent 404/405 errors."""
     return "WhatsApp Bot is Running!", 200
 
 @app.route("/whatsapp", methods=['POST'])
@@ -19,20 +19,21 @@ def whatsapp_reply():
     """Handles incoming WhatsApp messages via Twilio Webhook."""
     try:
         msg = request.form.get("Body", "").strip()  # Ensure msg is not None
-        logging.info(f"Received message: {msg}")
+        sender = request.form.get("From", "Unknown")  # Capture sender info
+        logging.info(f"Received message from {sender}: {msg}")
 
         response = MessagingResponse()
 
-        if not msg:
-            response.message("Oops! I didn't receive any message. Try again.")
-        elif "hello" in msg.lower():
-            response.message("Hello! How can I assist you today?")
-        elif "help" in msg.lower():
-            response.message("Sure! You can type:\n- 'info' for details\n- 'support' for help")
-        elif "info" in msg.lower():
-            response.message("This is a simple WhatsApp bot built with Flask and Twilio!")
-        else:
-            response.message("Sorry, I didn't understand that. Type 'help' for assistance.")
+        responses = {
+            "hello": "Hello! How can I assist you today?",
+            "help": "Sure! You can type:\n- 'info' for details\n- 'support' for help",
+            "info": "This is a simple WhatsApp bot built with Flask and Twilio!",
+            "support": "Contact our support team at support@example.com."
+        }
+
+        # Match user input against known responses
+        reply = responses.get(msg.lower(), "Sorry, I didn't understand that. Type 'help' for assistance.")
+        response.message(reply)
 
         return str(response)
     
