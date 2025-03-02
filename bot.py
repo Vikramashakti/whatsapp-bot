@@ -9,31 +9,34 @@ app = Flask(__name__)
 # Enable logging for debugging
 logging.basicConfig(level=logging.INFO)
 
-@app.route("/", methods=['GET', 'POST'])
+@app.route("/", methods=['GET'])
 def home():
-    """Default homepage to prevent 404/405 errors."""
+    """Default homepage to prevent 404 errors."""
     return "WhatsApp Bot is Running!", 200
 
 @app.route("/whatsapp", methods=['POST'])
 def whatsapp_reply():
     """Handles incoming WhatsApp messages via Twilio Webhook."""
     try:
+        sender = request.form.get("From", "")
         msg = request.form.get("Body", "").strip()  # Ensure msg is not None
-        sender = request.form.get("From", "Unknown")  # Capture sender info
         logging.info(f"Received message from {sender}: {msg}")
 
         response = MessagingResponse()
 
-        responses = {
-            "hello": "Hello! How can I assist you today?",
-            "help": "Sure! You can type:\n- 'info' for details\n- 'support' for help",
-            "info": "This is a simple WhatsApp bot built with Flask and Twilio!",
-            "support": "Contact our support team at support@example.com."
-        }
+        if not msg:
+            reply = "Oops! I didn't receive any message. Try again."
+        elif "hello" in msg.lower():
+            reply = "Hello! How can I assist you today?"
+        elif "help" in msg.lower():
+            reply = "Sure! You can type:\n- 'info' for details\n- 'support' for help"
+        elif "info" in msg.lower():
+            reply = "This is a simple WhatsApp bot built with Flask and Twilio!"
+        else:
+            reply = "Sorry, I didn't understand that. Type 'help' for assistance."
 
-        # Match user input against known responses
-        reply = responses.get(msg.lower(), "Sorry, I didn't understand that. Type 'help' for assistance.")
         response.message(reply)
+        logging.info(f"Replying to {sender}: {reply}")  # Log what is being sent
 
         return str(response)
     
